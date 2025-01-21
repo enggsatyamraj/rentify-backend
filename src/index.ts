@@ -1,3 +1,6 @@
+import dotenv from 'dotenv'
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -17,6 +20,10 @@ const port = process.env.PORT || 4545;
 const DB_URI = process.env.MONGODB_URL!;
 const router = express.Router();
 
+app.get("/", (_, res) => {
+    res.status(200).json({ message: "Rentify backend is running" })
+})
+
 app.get("/health", (_, res) => {
     res.status(200).json({ status: "OK" });
 });
@@ -24,6 +31,8 @@ app.get("/health", (_, res) => {
 app.use("*", (_, res) => {
     res.status(404).json({ message: "Resource not found" });
 });
+
+
 
 mongoose
     .connect(DB_URI)
