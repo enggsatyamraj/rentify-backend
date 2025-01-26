@@ -8,6 +8,7 @@ import compression from "compression";
 import rateLimiter from "./utils/rateLimit";
 import logger from "./utils/logger";
 import mongoose from "mongoose";
+import authRoutes from './routes/auth.routes';
 
 const app = express();
 app.use(cors());
@@ -27,6 +28,8 @@ app.get("/", (_, res) => {
 app.get("/health", (_, res) => {
     res.status(200).json({ status: "OK" });
 });
+
+app.use("/api/v1/auth", authRoutes);
 
 app.use("*", (_, res) => {
     res.status(404).json({ message: "Resource not found" });

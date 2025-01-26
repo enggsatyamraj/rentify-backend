@@ -12,11 +12,11 @@ const userSchema: Schema<IUser> = new Schema({
     },
     phoneNumber: {
         type: String,
-        required: true,
     },
     email: {
         type: String,
         unique: true,
+        required: true,
     },
     password: {
         type: String,
@@ -28,35 +28,64 @@ const userSchema: Schema<IUser> = new Schema({
     dateOfBirth: {
         type: Date,
     },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
+    otp: {
+        type: String,
+        required: true,
+        expires: 600 // 10 minutes
+    },
+    deviceTokens: [{
+        token: {
+            type: String,
+            required: true
+        },
+        deviceType: {
+            type: String,
+            enum: ['ios', 'android', 'web'],
+            required: true
+        },
+        lastUsed: {
+            type: Date,
+            default: Date.now
+        }
+    }]
+    ,
     address: {
         street: {
             type: String,
-            required: true,
+            // required: true,
         },
         city: {
             type: String,
-            required: true,
+            // required: true,
         },
         region: {
             type: String,
-            required: true,
+            // required: true,
         },
         country: {
             type: String,
-            required: true,
+            // required: true,
         },
         postalCode: {
             type: String,
-            required: true,
+            // required: true,
         },
         coordinates: {
             latitude: {
                 type: Number,
-                required: true,
+                // required: true,
             },
             longitude: {
                 type: Number,
-                required: true,
+                // required: true,
             },
         },
     }
