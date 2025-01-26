@@ -10,6 +10,7 @@ import rateLimiter from "./utils/rateLimit";
 import logger from "./utils/logger";
 import mongoose from "mongoose";
 import authRoutes from './routes/auth.routes';
+import UserModel from './models/UserModel/user.models';
 
 const app = express();
 // Add this after const app = express();
@@ -42,8 +43,9 @@ app.use("*", (_, res) => {
 
 mongoose
     .connect(DB_URI)
-    .then(() => {
+    .then(async () => {
         logger.info("Connected to MongoDB");
+        await UserModel.collection.dropIndexes();  // Add this line
     })
     .catch((error) => {
         logger.error("MongoDB connection error:", error);
