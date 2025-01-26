@@ -12,7 +12,7 @@ import authRoutes from './routes/auth.routes';
 
 const app = express();
 // Add this after const app = express();
-app.set('trust proxy', 1);
+// app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 app.use(helmet());
