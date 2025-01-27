@@ -27,10 +27,32 @@ class AuthController {
                         message: "User already exists, please login"
                     })
                 } else {
-                    return res.status(400).json({
-                        success: false,
-                        message: "Your email is not verified, so please verify your email"
-                    })
+                    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+                    // Update user with new OTP
+                    await UserModel.findOneAndUpdate(
+                        { _id: existingUser._id },
+                        {
+                            $set: {
+                                otp: newOtp,
+                                firstName, // Update with new details if provided
+                                lastName
+                            }
+                        }
+                    );
+
+                    // Send new OTP email
+                    await sendEmail({
+                        to: email,
+                        templateType: EmailType.OTP_VERIFICATION,
+                        payload: { firstName, otp: newOtp }
+                    });
+
+                    return res.status(200).json({
+                        success: true,
+                        message: "A new verification code has been sent to your email",
+                        userId: existingUser._id
+                    });
                 }
             }
 
