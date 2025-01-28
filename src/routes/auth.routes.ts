@@ -1,7 +1,7 @@
 import AuthController from "@/controllers/auth/auth.controller";
 import catchAsync from "@/utils/catchAsync";
 import { validateSchema } from "@/utils/validate";
-import { signinSchema, verifySchema, resendOtpSchema, signupSchema } from "@/utils/validators/auth.validation";
+import { signinSchema, verifySchema, resendOtpSchema, signupSchema, resetPasswordSchema, forgotPasswordSchema } from "@/utils/validators/auth.validation";
 import { Router } from "express";
 
 class AuthRoutes {
@@ -39,6 +39,20 @@ class AuthRoutes {
             validateSchema(signinSchema),
             catchAsync(AuthController.signin)
         );
+
+        this.router.post(
+            "/forgot-password",
+            // @ts-ignore
+            validateSchema(forgotPasswordSchema),
+            catchAsync(AuthController.forgotPassword)
+        )
+
+        this.router.post(
+            "/reset-password",
+            // @ts-ignore
+            validateSchema(resetPasswordSchema),
+            catchAsync(AuthController.resetPassword)
+        )
     }
 }
 

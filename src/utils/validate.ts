@@ -10,7 +10,7 @@ export const validateSchema = (schema: AnyZodObject) => {
                 params: req.params,
             });
             return next();
-        } catch (error) {
+        } catch (error: any) {
             if (error instanceof ZodError) {
                 return res.status(400).json({
                     success: false,
@@ -23,7 +23,8 @@ export const validateSchema = (schema: AnyZodObject) => {
             }
             return res.status(500).json({
                 success: false,
-                message: "Internal server error"
+                message: "Internal server error",
+                error: error.message
             });
         }
     };

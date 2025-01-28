@@ -169,7 +169,7 @@ export const EMAIL_TEMPLATES = (payload: { [key: string]: any }, key: EmailType)
             </body>
             </html>`
         },
-        [EmailType.PASSWORD_RESET]: {
+        [EmailType.RESET_PASSWORD_OTP]: {
             subject: 'Reset Your Rentify Password',
             html: `
             <html>
@@ -180,23 +180,16 @@ export const EMAIL_TEMPLATES = (payload: { [key: string]: any }, key: EmailType)
                     .container { max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; }
                     .logo { text-align: center; margin-bottom: 20px; }
                     .logo img { max-width: 150px; }
-                    .reset-box {
+                    .otp-box { 
                         background: #f8f9fa;
                         padding: 20px;
-                        border-radius: 8px;
-                        margin: 20px 0;
                         text-align: center;
+                        font-size: 32px;
+                        letter-spacing: 8px;
+                        margin: 25px 0;
+                        border-radius: 8px;
+                        border: 1px solid #e9ecef;
                     }
-                    .button {
-                        display: inline-block;
-                        padding: 12px 24px;
-                        background: #dc3545;
-                        color: white;
-                        text-decoration: none;
-                        border-radius: 5px;
-                        margin: 20px 0;
-                    }
-                    .warning { color: #dc3545; font-size: 14px; }
                     .footer { margin-top: 30px; color: #6c757d; font-size: 14px; }
                 </style>
             </head>
@@ -205,21 +198,54 @@ export const EMAIL_TEMPLATES = (payload: { [key: string]: any }, key: EmailType)
                     <div class="logo">
                         <img src="https://s3.eu-north-1.amazonaws.com/bucket.satyam.dev/House+1.png" alt="Rentify">
                     </div>
-                    <h2 style="color: #2c3e50; text-align: center;">Password Reset Request</h2>
+                    <h2 style="color: #2c3e50; text-align: center;">Reset Your Password</h2>
                     <p>Hello ${payload.firstName},</p>
-                    <p>We received a request to reset your Rentify password.</p>
-                    
-                    <div class="reset-box">
-                        <p>Click the button below to reset your password:</p>
-                        <center><a href="${payload.resetUrl}" class="button">Reset Password</a></center>
-                        <p class="warning">This link will expire in 1 hour for security reasons.</p>
+                    <p>We received a request to reset your password. Use the following code to reset your password:</p>
+                    <div class="otp-box">
+                        <strong>${payload.otp}</strong>
                     </div>
-
-                    <p>Or copy and paste this link in your browser:</p>
-                    <p style="word-break: break-all; color: #007bff;">${payload.resetUrl}</p>
-
-                    <p>If you didn't request this password reset, please ignore this email or contact support if you have concerns.</p>
-
+                    <p style="color: #dc3545;"><strong>This code will expire in 10 minutes.</strong></p>
+                    <p>If you didn't request this code, please ignore this email or contact support if you have concerns.</p>
+                    <div class="footer">
+                        <p>Best regards,<br>The Rentify Team</p>
+                    </div>
+                </div>
+            </body>
+            </html>`
+        },
+        [EmailType.PASSWORD_RESET_SUCCESS]: {
+            subject: 'Password Reset Successful - Rentify',
+            html: `
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; }
+                    .logo { text-align: center; margin-bottom: 20px; }
+                    .logo img { max-width: 150px; }
+                    .button {
+                        display: inline-block;
+                        padding: 12px 24px;
+                        background: #007bff;
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 5px;
+                        margin: 20px 0;
+                    }
+                    .footer { margin-top: 30px; color: #6c757d; font-size: 14px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="logo">
+                        <img src="https://s3.eu-north-1.amazonaws.com/bucket.satyam.dev/House+1.png" alt="Rentify">
+                    </div>
+                    <h2 style="color: #2c3e50; text-align: center;">Password Reset Successful</h2>
+                    <p>Hello ${payload.firstName},</p>
+                    <p>Your password has been successfully reset.</p>
+                    <center><a href="${payload.loginUrl}" class="button">Login Now</a></center>
+                    <p>If you did not make this change, please contact our support team immediately.</p>
                     <div class="footer">
                         <p>Best regards,<br>The Rentify Team</p>
                     </div>

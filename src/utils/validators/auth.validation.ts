@@ -107,3 +107,26 @@ export const signinSchema = z.object({
             .refine(val => !val.includes(' '), "Password cannot contain spaces")
     })
 });
+
+export const forgotPasswordSchema = z.object({
+    body: z.object({
+        ...emailSchema
+    })
+});
+
+// Schema for resetting password with OTP
+export const resetPasswordSchema = z.object({
+    body: z.object({
+        ...emailSchema,
+        ...otpSchema,
+        newPassword: passwordSchema.password,
+        confirmNewPassword: z.string({
+            required_error: "Confirm password is required",
+            invalid_type_error: "Confirm password must be a string"
+        })
+            .refine(val => !val.includes(' '), "Confirm password cannot contain spaces")
+    }).refine((data) => data.newPassword === data.confirmNewPassword, {
+        message: "Passwords don't match",
+        path: ["confirmNewPassword"]
+    })
+});

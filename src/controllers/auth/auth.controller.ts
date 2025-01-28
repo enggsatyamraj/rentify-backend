@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import UserModel from "@/models/UserModel/user.models";
 import { EmailType } from "@/utils/enums";
 import { sendEmail } from "@/utils/mailer";
+import logger from "@/utils/logger";
 
 class AuthController {
     static async signup(req: Request, res: Response) {
@@ -27,6 +28,7 @@ class AuthController {
                         message: "User already exists, please login"
                     })
                 } else {
+                    logger.info("Resending OTP to existing user", { email });
                     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
                     // Update user with new OTP
@@ -206,6 +208,8 @@ class AuthController {
     static async signin(req: Request, res: Response) {
         try {
             const { email, password } = req.body;
+            console.log("Signin request received", { email });
+            console.log("Signin request received", { email });
 
             const user = await UserModel.findOne({
                 email,
@@ -255,6 +259,101 @@ class AuthController {
         } catch (error) {
             console.error("Signin error:", error);
             res.status(500).json({
+                success: false,
+                message: "Internal server error"
+            });
+        }
+    }
+
+    static async forgotPassword(req: Request, res: Response) {
+        try {
+            const { email } = req.body;
+            logger.info("Forgot password request received", { email });
+
+            const user = await UserModel.findOne({ email, isDeleted: false });
+            if (!user) {
+                return res.status(200).json({
+                    success: true,
+                    message: "If a user exists with this email, they will receive a password reset code."
+                });
+            }
+
+            // Generate new OTP
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+            // Update user with new OTP (will auto-expire in 10 minutes due to schema TTL)
+            user.otp = otp;
+            await user.save();
+
+            // Send password reset OTP email
+            await sendEmail({
+                to: email,
+                templateType: EmailType.RESET_PASSWORD_OTP,
+                payload: {
+                    firstName: user.firstName,
+                    otp
+                }
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "If a user exists with this email, they will receive a password reset code."
+            });
+
+        } catch (error) {
+            logger.error("Forgot password error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Internal server error"
+            });
+        }
+    }
+
+    static async resetPassword(req: Request, res: Response) {
+        try {
+            const { email, otp, newPassword } = req.body;
+            logger.info("Reset password request received", { email });
+
+            const user = await UserModel.findOne({
+                email,
+                otp,
+                isDeleted: false
+            });
+
+            if (!user) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid or expired reset code. Please request a new one."
+                });
+            }
+
+            // Hash new password
+            const newHashedPassword = await bcrypt.hash(newPassword, 10);
+
+            // Update password and remove OTP
+            user.password = newHashedPassword;
+            user.otp = "";
+            await user.save();
+
+            // Send confirmation email
+            await sendEmail({
+                to: email,
+                templateType: EmailType.PASSWORD_RESET_SUCCESS,
+                payload: {
+                    firstName: user.firstName,
+                    loginUrl: `${process.env.FRONTEND_URL}/login`
+                }
+            });
+
+            logger.info("Password reset successful", { email });
+            return res.status(200).json({
+                success: true,
+                message: "Password reset successfully. Please login with your new password."
+            });
+
+        } catch (error) {
+            logger.error("Reset password error:", error);
+            return res.status(500).json({
                 success: false,
                 message: "Internal server error"
             });

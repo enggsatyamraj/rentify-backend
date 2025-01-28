@@ -12,8 +12,17 @@ import mongoose from "mongoose";
 import authRoutes from './routes/auth.routes';
 
 const app = express();
+app.use(express.json());
 // Add this after const app = express();
 // app.set('trust proxy', 1);
+app.use((req, res, next) => {
+    console.log('Request received:', {
+        path: req.path,
+        method: req.method,
+        body: req.body
+    });
+    next();
+});
 app.use(cors());
 app.use(express.json());
 app.use(helmet());
@@ -22,13 +31,16 @@ app.use(rateLimiter);
 
 const port = process.env.PORT || 4545;
 const DB_URI = process.env.MONGODB_URL!;
-const router = express.Router();
+// const router = express.Router();
 
 app.get("/", (_, res) => {
     res.status(200).json({ message: "Rentify backend is running" })
 })
 
 app.get("/health", (_, res) => {
+    logger.info("Health check is happening");
+    logger.info("logger is working correctly");
+    logger.error("logger is working correctly");
     res.status(200).json({ status: "OK" });
 });
 
