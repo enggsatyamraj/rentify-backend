@@ -22,7 +22,7 @@ export interface IUser extends Document {
     lastName: string;
     phoneNumber?: string;
     email: string;
-    otp: string;
+    otp?: string;
     password: string;
     profileImage?: string;
     createdAt: Date;

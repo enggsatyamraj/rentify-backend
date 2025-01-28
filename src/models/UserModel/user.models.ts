@@ -38,7 +38,7 @@ const userSchema: Schema<IUser> = new Schema({
     },
     otp: {
         type: String,
-        required: true,
+        // required: true,
         expires: 600 // 10 minutes
     },
     deviceTokens: [{
