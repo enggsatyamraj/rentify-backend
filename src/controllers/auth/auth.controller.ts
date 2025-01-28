@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-
 import UserModel from "@/models/UserModel/user.models";
 import { EmailType } from "@/utils/enums";
 import { sendEmail } from "@/utils/mailer";
@@ -31,12 +30,13 @@ class AuthController {
                     logger.info("Resending OTP to existing user", { email });
                     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
-                    // Update user with new OTP
+                    // Update user with new OTP and expiry
                     await UserModel.findOneAndUpdate(
                         { _id: existingUser._id },
                         {
                             $set: {
                                 otp: newOtp,
+                                otpExpiry: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
                                 firstName, // Update with new details if provided
                                 lastName
                             }
@@ -67,6 +67,7 @@ class AuthController {
                 firstName,
                 lastName,
                 otp,
+                otpExpiry: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
                 isVerified: false,
                 isDeleted: false
             });
@@ -76,15 +77,6 @@ class AuthController {
                 templateType: EmailType.OTP_VERIFICATION,
                 payload: { firstName, otp }
             });
-
-            // await sendEmail({
-            //     to: email,
-            //     templateType: EmailType.WELCOME_NOT_VERIFIED,
-            //     payload: {
-            //         firstName,
-            //         verificationUrl: `${process.env.FRONTEND_URL}/verify?email=${email}`
-            //     }
-            // });
 
             res.status(201).json({
                 success: true,
@@ -107,37 +99,25 @@ class AuthController {
 
             const user = await UserModel.findOne({
                 email,
+                otp,
+                otpExpiry: { $gt: new Date() }, // Check if OTP hasn't expired
                 isDeleted: false,
                 isVerified: false
             });
 
             if (!user) {
-                return res.status(404).json({
-                    success: false,
-                    message: "User not found or already verified"
-                });
-            }
-
-            if (!user.otp) {
                 return res.status(400).json({
                     success: false,
-                    message: "OTP expired. Please request a new OTP"
+                    message: "Invalid or expired verification code. Please request a new one."
                 });
             }
 
-            if (user.otp !== otp) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid OTP"
-                });
-            }
-
-            // Update directly using findOneAndUpdate
+            // Update user status and remove OTP
             await UserModel.findOneAndUpdate(
                 { _id: user._id },
                 {
                     $set: { isVerified: true },
-                    $unset: { otp: "" }
+                    $unset: { otp: "", otpExpiry: "" }
                 }
             );
 
@@ -182,8 +162,17 @@ class AuthController {
             }
 
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
-            user.otp = otp;
-            await user.save();
+
+            // Update with new OTP and expiry
+            await UserModel.findOneAndUpdate(
+                { _id: user._id },
+                {
+                    $set: {
+                        otp: otp,
+                        otpExpiry: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+                    }
+                }
+            );
 
             await sendEmail({
                 to: email,
@@ -208,8 +197,6 @@ class AuthController {
     static async signin(req: Request, res: Response) {
         try {
             const { email, password } = req.body;
-            console.log("Signin request received", { email });
-            console.log("Signin request received", { email });
 
             const user = await UserModel.findOne({
                 email,
@@ -278,14 +265,19 @@ class AuthController {
                 });
             }
 
-            // Generate new OTP
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-            // Update user with new OTP (will auto-expire in 10 minutes due to schema TTL)
-            user.otp = otp;
-            await user.save();
+            // Update user with new OTP and expiry
+            await UserModel.findOneAndUpdate(
+                { _id: user._id },
+                {
+                    $set: {
+                        otp: otp,
+                        otpExpiry: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+                    }
+                }
+            );
 
-            // Send password reset OTP email
             await sendEmail({
                 to: email,
                 templateType: EmailType.RESET_PASSWORD_OTP,
@@ -317,6 +309,7 @@ class AuthController {
             const user = await UserModel.findOne({
                 email,
                 otp,
+                otpExpiry: { $gt: new Date() }, // Check if OTP hasn't expired
                 isDeleted: false
             });
 
@@ -330,10 +323,14 @@ class AuthController {
             // Hash new password
             const newHashedPassword = await bcrypt.hash(newPassword, 10);
 
-            // Update password and remove OTP
-            user.password = newHashedPassword;
-            user.otp = "";
-            await user.save();
+            // Update password and remove OTP data
+            await UserModel.findOneAndUpdate(
+                { _id: user._id },
+                {
+                    $set: { password: newHashedPassword },
+                    $unset: { otp: "", otpExpiry: "" }
+                }
+            );
 
             // Send confirmation email
             await sendEmail({

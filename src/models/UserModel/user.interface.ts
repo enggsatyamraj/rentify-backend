@@ -23,6 +23,7 @@ export interface IUser extends Document {
     phoneNumber?: string;
     email: string;
     otp?: string;
+    otpExpiry?: Date,
     password: string;
     profileImage?: string;
     createdAt: Date;

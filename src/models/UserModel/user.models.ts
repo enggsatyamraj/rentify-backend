@@ -38,8 +38,9 @@ const userSchema: Schema<IUser> = new Schema({
     },
     otp: {
         type: String,
-        // required: true,
-        expires: 600 // 10 minutes
+    },
+    otpExpiry: {
+        type: Date,
     },
     deviceTokens: [{
         token: {
@@ -55,46 +56,40 @@ const userSchema: Schema<IUser> = new Schema({
             type: Date,
             default: Date.now
         }
-    }]
-    ,
+    }],
     address: {
         street: {
             type: String,
-            // required: true,
         },
         city: {
             type: String,
-            // required: true,
         },
         region: {
             type: String,
-            // required: true,
         },
         country: {
             type: String,
-            // required: true,
         },
         postalCode: {
             type: String,
-            // required: true,
         },
         coordinates: {
             latitude: {
                 type: Number,
-                // required: true,
             },
             longitude: {
                 type: Number,
-                // required: true,
             },
         },
     }
-},
-    {
-        timestamps: true
-    })
+}, {
+    timestamps: true
+});
 
-userSchema.index({ 'address.coordinates': '2dsphere' })
+// Create TTL index for OTP expiry
+userSchema.index({ otpExpiry: 1 }, { expireAfterSeconds: 0 });
+// Geospatial index
+userSchema.index({ 'address.coordinates': '2dsphere' });
 
 const UserModel = model<IUser>("Users", userSchema);
 
