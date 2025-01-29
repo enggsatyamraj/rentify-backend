@@ -257,7 +257,7 @@ class AuthController {
             const { email } = req.body;
             logger.info("Forgot password request received", { email });
 
-            const user = await UserModel.findOne({ email, isDeleted: false });
+            const user = await UserModel.findOne({ email, isDeleted: false, isVerified: true });
             if (!user) {
                 return res.status(200).json({
                     success: false,
