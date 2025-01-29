@@ -260,8 +260,8 @@ class AuthController {
             const user = await UserModel.findOne({ email, isDeleted: false });
             if (!user) {
                 return res.status(200).json({
-                    success: true,
-                    message: "If a user exists with this email, they will receive a password reset code."
+                    success: false,
+                    message: "User don't exist with this email"
                 });
             }
 
