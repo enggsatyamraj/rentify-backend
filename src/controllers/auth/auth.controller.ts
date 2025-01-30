@@ -261,7 +261,7 @@ class AuthController {
             if (!user) {
                 return res.status(200).json({
                     success: false,
-                    message: "User don't exist with this email"
+                    message: "User don't exist with this email or its account is not verified."
                 });
             }
 

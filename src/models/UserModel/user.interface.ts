@@ -1,37 +1,43 @@
-import { Document, Schema } from "mongoose";
-
-interface IDeviceToken {
-    token: string;
-    deviceType: 'ios' | 'android' | 'web';
-    lastUsed: Date;
-}
-export interface IAddress extends Document {
-    street?: string;
-    city?: string;
-    region?: string;
-    country?: string;
-    postalCode?: string;
-    coordinates: {
-        latitude?: number;
-        longitude?: number;
-    }
-}
+import { Document, Types } from "mongoose";
 
 export interface IUser extends Document {
     firstName: string;
     lastName: string;
     phoneNumber?: string;
     email: string;
-    otp?: string;
-    otpExpiry?: Date,
     password: string;
     profileImage?: string;
-    createdAt: Date;
-    updatedAt: Date;
+    aadharNumber?: string;
+    aadharVerified: boolean;
     dateOfBirth?: Date;
-    address?: IAddress;
     isDeleted: boolean;
     isVerified: boolean;
-    deviceTokens?: IDeviceToken[];
+    otp?: string;
+    otpExpiry?: Date;
+    propertyListings?: [{
+        property: Types.ObjectId;
+        listedAt: Date;
+    }];
+    rentedProperties?: [{
+        property: Types.ObjectId;
+        rentedFrom: Date;
+        rentedTill?: Date;
+        isActive: boolean;
+    }];
+    deviceTokens?: [{
+        token: string;
+        deviceType: string;
+        lastUsed: Date;
+    }];
+    address?: {
+        street?: string;
+        city?: string;
+        region?: string;
+        country?: string;
+        postalCode?: string;
+        coordinates?: {
+            latitude?: number;
+            longitude?: number;
+        };
+    };
 }
-

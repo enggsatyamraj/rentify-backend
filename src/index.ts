@@ -10,6 +10,7 @@ import rateLimiter from "./utils/rateLimit";
 import logger from "./utils/logger";
 import mongoose from "mongoose";
 import authRoutes from './routes/auth.routes';
+import propertyRoutes from './routes/property.routes'
 
 const app = express();
 app.use(express.json());
@@ -45,6 +46,7 @@ app.get("/health", (_, res) => {
 });
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/property", propertyRoutes);
 
 app.use("*", (_, res) => {
     res.status(404).json({ message: "Resource not found" });
