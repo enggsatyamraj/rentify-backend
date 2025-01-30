@@ -1,7 +1,9 @@
-import AuthController from "@/controllers/auth/auth.controller";
-import catchAsync from "@/utils/catchAsync";
-import { validateSchema } from "@/utils/validate";
-import { signinSchema, verifySchema, resendOtpSchema, signupSchema, resetPasswordSchema, forgotPasswordSchema } from "@/utils/validators/auth.validation";
+import AuthController from "../controllers/auth/auth.controller";
+import { auth } from "../middleware/auth.middleware";
+import catchAsync from "../utils/catchAsync";
+import { upload } from "../utils/upload";
+import { validateSchema } from "../utils/validate";
+import { signinSchema, verifySchema, resendOtpSchema, signupSchema, resetPasswordSchema, forgotPasswordSchema, updateProfileSchema } from "@/utils/validators/auth.validation";
 import { Router } from "express";
 
 class AuthRoutes {
@@ -52,6 +54,16 @@ class AuthRoutes {
             // @ts-ignore
             validateSchema(resetPasswordSchema),
             catchAsync(AuthController.resetPassword)
+        )
+
+        this.router.put(
+            "/update",
+            // @ts-ignore
+            auth,
+            // ensureVerified,
+            upload.single("profileImage"),
+            validateSchema(updateProfileSchema),
+            catchAsync(AuthController.updateProfile)
         )
     }
 }

@@ -6,6 +6,8 @@ import UserModel from "@/models/UserModel/user.models";
 import { EmailType } from "@/utils/enums";
 import { sendEmail } from "@/utils/mailer";
 import logger from "@/utils/logger";
+import { validateVerhoeff } from "../../utils/verhoeff_algorithm";
+import { deleteImage, uploadImage } from "../../utils/upload";
 
 class AuthController {
     static async signup(req: Request, res: Response) {
@@ -351,6 +353,134 @@ class AuthController {
         } catch (error) {
             logger.error("Reset password error:", error);
             return res.status(500).json({
+                success: false,
+                message: "Internal server error"
+            });
+        }
+    }
+
+    static async updateProfile(req: Request, res: Response) {
+        try {
+            // @ts-ignore
+            const userId = req.user.userId; // From auth middleware
+            const {
+                firstName,
+                lastName,
+                phoneNumber,
+                dateOfBirth,
+                aadharNumber,
+                address
+            } = req.body;
+
+            // Find existing user
+            const existingUser = await UserModel.findById(userId);
+            if (!existingUser) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found"
+                });
+            }
+
+            // Handle profile image upload if present
+            let profileImageData = undefined;
+            if (req.file) {
+                try {
+                    // Delete old image if exists
+                    if (existingUser.profileImage) {
+                        const oldImageKey = existingUser.profileImage.split('/').pop();
+                        if (oldImageKey) {
+                            await deleteImage(`rentify/profiles/${oldImageKey}`);
+                        }
+                    }
+
+                    // Upload new image
+                    const { url } = await uploadImage(
+                        'profiles',
+                        `${userId}_${Date.now()}`,
+                        req.file,
+                        true // Enable resize
+                    );
+                    profileImageData = url;
+                } catch (error) {
+                    logger.error('Profile image upload failed:', error);
+                    return res.status(400).json({
+                        success: false,
+                        message: "Failed to upload profile image"
+                    });
+                }
+            }
+
+            // Validate Aadhar number if provided
+            if (aadharNumber) {
+                // First check the basic format
+                if (!/^\d{12}$/.test(aadharNumber)) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Invalid Aadhar number format. Must be 12 digits."
+                    });
+                }
+
+                // Then validate using Verhoeff algorithm
+                if (!validateVerhoeff(aadharNumber)) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Invalid Aadhar number. Failed checksum validation."
+                    });
+                }
+
+                // Check if Aadhar is already in use by another user
+                const existingAadhar = await UserModel.findOne({
+                    aadharNumber,
+                    _id: { $ne: userId },
+                    isDeleted: false
+                });
+
+                if (existingAadhar) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "This Aadhar number is already registered with another account"
+                    });
+                }
+            }
+
+            // Prepare update object
+            const updateData: any = {};
+            if (firstName) updateData.firstName = firstName;
+            if (lastName) updateData.lastName = lastName;
+            if (phoneNumber) updateData.phoneNumber = phoneNumber;
+            if (dateOfBirth) updateData.dateOfBirth = new Date(dateOfBirth);
+            if (profileImageData) updateData.profileImage = profileImageData;
+            if (aadharNumber) {
+                updateData.aadharNumber = aadharNumber;
+                updateData.aadharVerified = false; // Reset verification on new number
+            }
+            if (address) {
+                updateData.address = {
+                    street: address.street,
+                    city: address.city,
+                    region: address.region,
+                    country: address.country,
+                    postalCode: address.postalCode,
+                    coordinates: address.coordinates
+                };
+            }
+
+            // Update user profile
+            const updatedUser = await UserModel.findByIdAndUpdate(
+                userId,
+                { $set: updateData },
+                { new: true, select: '-password -otp -otpExpiry' }
+            );
+
+            res.status(200).json({
+                success: true,
+                message: "Profile updated successfully",
+                data: updatedUser
+            });
+
+        } catch (error) {
+            logger.error("Profile update error:", error);
+            res.status(500).json({
                 success: false,
                 message: "Internal server error"
             });
