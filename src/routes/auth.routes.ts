@@ -62,6 +62,7 @@ class AuthRoutes {
             auth,
             // ensureVerified,
             upload.single("profileImage"),
+            // @ts-ignore
             validateSchema(updateProfileSchema),
             catchAsync(AuthController.updateProfile)
         )
