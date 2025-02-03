@@ -1,3 +1,4 @@
+import { z } from "zod";
 import AuthController from "../controllers/auth/auth.controller";
 import { auth } from "../middleware/auth.middleware";
 import catchAsync from "../utils/catchAsync";
@@ -57,15 +58,15 @@ class AuthRoutes {
         )
 
         this.router.put(
-            "/update",
+            '/update',
             // @ts-ignore
             auth,
-            // ensureVerified,
             upload.single("profileImage"),
-            // @ts-ignore
-            validateSchema(updateProfileSchema),
+            validateSchema(z.object({
+                body: updateProfileSchema
+            })),
             catchAsync(AuthController.updateProfile)
-        )
+        );
     }
 }
 

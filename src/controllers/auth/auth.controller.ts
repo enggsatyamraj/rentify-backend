@@ -362,7 +362,9 @@ class AuthController {
     static async updateProfile(req: Request, res: Response) {
         try {
             // @ts-ignore
-            const userId = req.user.userId; // From auth middleware
+            const userId = req.user.id; // From auth middleware
+            console.log('userId:', userId);
+            logger.info("Profile update request received", { userId });
             const {
                 firstName,
                 lastName,
