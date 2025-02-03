@@ -212,15 +212,10 @@ export const resetPasswordSchema = z.object({
 });
 
 export const updateProfileSchema = z.object({
-    firstName: nameSchema.firstName.optional(),
-    lastName: nameSchema.lastName.optional(),
-    ...phoneSchema,
-    ...dateOfBirthSchema,
-    ...aadharSchema,
-    ...addressSchema
-}).refine(data => {
-    // Ensure at least one field is provided
-    return Object.keys(data).length > 0;
-}, {
-    message: "At least one field must be provided for update"
-});
+    firstName: nameSchema.firstName,
+    lastName: nameSchema.lastName,
+    phoneNumber: phoneSchema.phoneNumber,
+    dateOfBirth: dateOfBirthSchema.dateOfBirth,
+    aadharNumber: aadharSchema.aadharNumber,
+    address: addressSchema.address
+}).partial();

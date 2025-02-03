@@ -501,7 +501,8 @@ class AuthController {
             logger.error("Profile update error:", error);
             res.status(500).json({
                 success: false,
-                message: "Internal server error"
+                message: "Internal server error",
+                error: error,
             });
         }
     }
