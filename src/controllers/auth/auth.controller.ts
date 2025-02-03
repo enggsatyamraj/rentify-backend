@@ -412,6 +412,23 @@ class AuthController {
                 }
             }
 
+            // Validate phone number if provided
+            if (phoneNumber) {
+                // Check if phone number is already in use by another user
+                const existingPhone = await UserModel.findOne({
+                    phoneNumber,
+                    _id: { $ne: userId }, // Exclude current user
+                    isDeleted: false
+                });
+
+                if (existingPhone) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "This phone number is already registered with another account"
+                    });
+                }
+            }
+
             // Validate Aadhar number if provided
             if (aadharNumber) {
                 // First check the basic format
