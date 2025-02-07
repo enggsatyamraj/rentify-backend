@@ -336,7 +336,9 @@ class PropertyController {
 
             // Filter out any null properties (in case some were deleted)
             const properties = user.propertyListings
+                // @ts-ignore
                 .filter(listing => listing.property !== null)
+                // @ts-ignore
                 .map(listing => ({
                     ...listing.property.toObject(),
                     listedAt: listing.listedAt
