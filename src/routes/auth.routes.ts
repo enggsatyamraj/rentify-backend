@@ -67,6 +67,13 @@ class AuthRoutes {
             })),
             catchAsync(AuthController.updateProfile)
         );
+
+        this.router.get(
+            "/user-details",
+            // @ts-ignore
+            auth,
+            catchAsync(AuthController.getUserAllDetails)
+        )
     }
 }
 

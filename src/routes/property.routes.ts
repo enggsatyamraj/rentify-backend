@@ -40,6 +40,13 @@ class PropertyRoutes {
             catchAsync(PropertyController.getProperties)
         );
 
+        this.router.get(
+            "/user",
+            // @ts-ignore
+            auth,
+            catchAsync(PropertyController.getUserProperties)
+        )
+
         // Get single property - Public route
         this.router.get(
             "/:id",
@@ -77,6 +84,8 @@ class PropertyRoutes {
             validateSchema(propertyIdSchema),
             catchAsync(PropertyController.toggleFavorite)
         );
+
+
     }
 }
 

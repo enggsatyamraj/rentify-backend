@@ -506,6 +506,97 @@ class AuthController {
             });
         }
     }
+
+    static async getUserAllDetails(req: Request, res: Response) {
+        try {
+            // @ts-ignore
+            const userId = req.user.id;
+
+            const userExists = await UserModel.findById(userId)
+                .select('-password -otp -otpExpiry')
+                .populate({
+                    path: 'propertyListings.property',
+                    match: { isDeleted: false },
+                    select: `
+                        title description propertyType price location details
+                        amenities preferredTenants availableFrom images
+                        status rules foodAvailable maintainenceCharges metaData
+                    `,
+                    populate: {
+                        path: 'owner',
+                        select: 'firstName lastName email phoneNumber profileImage'
+                    }
+                })
+                .populate({
+                    path: 'rentedProperties.property',
+                    match: { isDeleted: false },
+                    select: `
+                        title description propertyType price location details
+                        amenities preferredTenants availableFrom images
+                        status rules foodAvailable maintainenceCharges
+                    `,
+                    populate: {
+                        path: 'owner',
+                        select: 'firstName lastName email phoneNumber profileImage'
+                    }
+                })
+                .lean();
+
+            if (!userExists) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found"
+                });
+            }
+
+            const stats = {
+                totalListings: userExists.propertyListings?.length || 0,
+                activeRentals: userExists.rentedProperties?.filter(rental => rental.isActive).length || 0,
+                propertyTypes: userExists.propertyListings?.reduce((acc, curr) => {
+                    if (curr.property) {  // Need this check since we're not filtering nulls
+                        const type = curr.property.propertyType;
+                        acc[type] = (acc[type] || 0) + 1;
+                    }
+                    return acc;
+                }, {} as Record<string, number>) || {},
+                totalViews: userExists.propertyListings?.reduce((sum, curr) =>
+                    sum + (curr.property?.metaData?.views || 0), 0) || 0,
+                totalFavorites: userExists.propertyListings?.reduce((sum, curr) =>
+                    sum + (curr.property?.metaData?.favoriteCount || 0), 0) || 0
+            };
+
+            const responseData = {
+                userInfo: {
+                    firstName: userExists.firstName,
+                    lastName: userExists.lastName,
+                    email: userExists.email,
+                    phoneNumber: userExists.phoneNumber,
+                    profileImage: userExists.profileImage,
+                    address: userExists.address,
+                    aadharVerified: userExists.aadharVerified,
+                    isVerified: userExists.isVerified
+                },
+                propertyListings: userExists.propertyListings,  // No filtering here
+                rentedProperties: userExists.rentedProperties,  // No filtering here
+                stats,
+                deviceTokens: userExists.deviceTokens
+            };
+
+            return res.status(200).json({
+                success: true,
+                message: "User details fetched successfully",
+                data: responseData
+            });
+
+        } catch (err) {
+            logger.info("Error in getting user details", err);
+            return res.status(500).json({
+                success: false,
+                message: "Error in getting user details",
+                error: err
+            });
+        }
+    }
 }
 
 export default AuthController;

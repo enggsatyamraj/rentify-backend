@@ -308,6 +308,54 @@ class PropertyController {
             });
         }
     }
+
+    // Get properties listed by the current user
+    static async getUserProperties(req: Request, res: Response) {
+        try {
+            // @ts-ignore
+            const userId = req.user.id;
+
+            // Find the user and populate their property listings
+            const user = await UserModel.findById(userId)
+                .populate({
+                    path: 'propertyListings.property',
+                    match: { 'status.isActive': true }, // Only get active properties
+                    populate: {
+                        path: 'owner',
+                        select: 'firstName lastName phoneNumber'
+                    }
+                })
+                .select('propertyListings');
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found"
+                });
+            }
+
+            // Filter out any null properties (in case some were deleted)
+            const properties = user.propertyListings
+                .filter(listing => listing.property !== null)
+                .map(listing => ({
+                    ...listing.property.toObject(),
+                    listedAt: listing.listedAt
+                }));
+
+            res.status(200).json({
+                success: true,
+                message: "Properties fetched successfully",
+                data: properties
+            });
+
+        } catch (error: any) {
+            logger.error('Get user properties error:', error);
+            res.status(500).json({
+                success: false,
+                message: "Internal server error"
+            });
+        }
+    }
 }
 
 export default PropertyController;
