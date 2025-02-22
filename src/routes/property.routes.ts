@@ -20,6 +20,7 @@ const parseFormDataBody = (req: Request, res: Response, next: any) => {
             console.log('Parsed body:', req.body);
         } catch (error) {
             console.error('Error parsing body field:', error);
+            // @ts-ignore
             return res.status(400).json({
                 success: false,
                 message: 'Invalid JSON in body field'
