@@ -12,7 +12,7 @@ import {
 } from "../utils/validators/property.validation";
 import catchAsync from "../utils/catchAsync";
 
-const parseFormDataBody = (req, res, next) => {
+const parseFormDataBody = (req: Request, res: Response, next: any) => {
     if (req.body && req.body.body && typeof req.body.body === 'string') {
         try {
             // Replace req.body with the parsed JSON from the 'body' field
