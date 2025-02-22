@@ -12,6 +12,23 @@ import {
 } from "../utils/validators/property.validation";
 import catchAsync from "../utils/catchAsync";
 
+const parseFormDataBody = (req, res, next) => {
+    if (req.body && req.body.body && typeof req.body.body === 'string') {
+        try {
+            // Replace req.body with the parsed JSON from the 'body' field
+            req.body = JSON.parse(req.body.body);
+            console.log('Parsed body:', req.body);
+        } catch (error) {
+            console.error('Error parsing body field:', error);
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid JSON in body field'
+            });
+        }
+    }
+    next();
+};
+
 class PropertyRoutes {
     public router: Router;
 
@@ -72,6 +89,7 @@ class PropertyRoutes {
             auth,
             ensureVerified,
             propertyImagesUpload,
+            parseFormDataBody,  // <-- Add this middleware
             validateSchema(updatePropertySchema),
             catchAsync(PropertyController.updateProperty)
         );

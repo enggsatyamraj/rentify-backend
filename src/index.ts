@@ -11,6 +11,7 @@ import logger from "./utils/logger";
 import mongoose from "mongoose";
 import authRoutes from './routes/auth.routes';
 import propertyRoutes from './routes/property.routes'
+import adminRoutes from './routes/admin.routes';
 import UserModel from './models/UserModel/user.models';
 
 const app = express();
@@ -48,6 +49,7 @@ app.get("/health", (_, res) => {
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/property", propertyRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 app.use("*", (_, res) => {
     res.status(404).json({ message: "Resource not found" });

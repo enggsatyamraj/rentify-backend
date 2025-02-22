@@ -173,6 +173,19 @@ class PropertyController {
     // Update property
     static async updateProperty(req: Request, res: Response) {
         try {
+            // If 'body' field is present and is a string, parse it
+            if (req.body && req.body.body && typeof req.body.body === 'string') {
+                try {
+                    req.body = JSON.parse(req.body.body);
+                } catch (error) {
+                    console.error('Error parsing body in controller:', error);
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Invalid JSON format in body field'
+                    });
+                }
+            }
+
             const { id } = req.params;
             // @ts-ignore
             const userId = req.user.id;
@@ -202,9 +215,13 @@ class PropertyController {
                     };
                 }));
 
+                // If images array already exists in req.body, use it; otherwise use property.images
+                const existingImages = req.body.images || property.images;
                 // Add new images to existing ones
-                req.body.images = [...property.images, ...newImages];
+                req.body.images = [...existingImages, ...newImages];
             }
+
+            console.log('Final data for update:', req.body);
 
             const updatedProperty = await PropertyModel.findByIdAndUpdate(
                 id,

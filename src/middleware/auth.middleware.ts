@@ -33,7 +33,7 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
 
         // Add user to request
         // @ts-ignore
-        req.user = { id: user._id.toString() };
+        req.user = { id: user._id.toString(), isAdmin: user.isAdmin };
         next();
 
     } catch (error) {
@@ -43,6 +43,28 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
         });
     }
 };
+
+export const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        // First run the auth middleware
+        auth(req, res, async () => {
+            // @ts-ignore
+            if (!req.user?.isAdmin) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Access denied. Admin privileges required"
+                });
+            }
+            next();
+        });
+    } catch (error) {
+        res.status(403).json({
+            success: false,
+            message: "Admin authorization failed"
+        });
+    }
+};
+
 
 // Handle property images upload
 export const propertyImagesUpload = upload.array('images', 10); // Max 10 images
