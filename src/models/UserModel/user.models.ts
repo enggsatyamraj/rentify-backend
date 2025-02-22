@@ -52,6 +52,10 @@ const userSchema: Schema<IUser> = new Schema({
     otpExpiry: {
         type: Date,
     },
+    isAdmin: {
+        type: Boolean,
+        default: false,
+    },
     propertyListings: [{
         property: {
             type: Schema.Types.ObjectId,

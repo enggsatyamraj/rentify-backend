@@ -23,7 +23,7 @@ class PropertyController {
             }
 
             // Verify user has phone and aadhar
-            if (!user.phoneNumber || !user.aadharVerified) {
+            if (!user.phoneNumber || !user.aadharNumber) {
                 return res.status(403).json({
                     success: false,
                     message: "Please verify your phone number and Aadhar before listing a property"

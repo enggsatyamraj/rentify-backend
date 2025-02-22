@@ -1,6 +1,6 @@
 // src/routes/property.routes.ts
 
-import { Router } from "express";
+import { NextFunction, Request, Router } from "express";
 import PropertyController from "../controllers/property/property.controller";
 import { auth, ensureVerified, propertyImagesUpload } from "../middleware/auth.middleware";
 import { validateSchema } from "../utils/validate";
@@ -27,7 +27,17 @@ class PropertyRoutes {
             // @ts-ignore
             auth,
             ensureVerified,
-            propertyImagesUpload,
+            propertyImagesUpload, // First handle file upload
+            (req: Request, res: Response, next: NextFunction) => {
+                try {
+                    // Parse the body data after file upload
+                    const bodyData = JSON.parse(req.body.body);
+                    req.body = bodyData; // Replace the body with parsed data
+                    next();
+                } catch (error) {
+                    next(error);
+                }
+            },
             validateSchema(createPropertySchema),
             catchAsync(PropertyController.createProperty)
         );

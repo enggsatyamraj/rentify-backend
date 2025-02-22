@@ -51,7 +51,7 @@ export const propertyImagesUpload = upload.array('images', 10); // Max 10 images
 export const ensureVerified = async (req: Request, res: Response, next: NextFunction) => {
     try {
         // @ts-ignore
-        const user = await UserModel.findById(req.user.id);
+        const user = await UserModel.findById(req.user.id)
 
         if (!user) {
             return res.status(404).json({
@@ -60,7 +60,7 @@ export const ensureVerified = async (req: Request, res: Response, next: NextFunc
             });
         }
 
-        if (!user.phoneNumber || !user.aadharVerified) {
+        if (!user.phoneNumber || !user.aadharNumber) {
             return res.status(403).json({
                 success: false,
                 message: "Please verify your phone number and Aadhar to perform this action"

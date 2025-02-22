@@ -13,6 +13,7 @@ export interface IUser extends Document {
     isDeleted: boolean;
     isVerified: boolean;
     otp?: string;
+    isAdmin: boolean;
     otpExpiry?: Date;
     propertyListings?: [{
         property: Types.ObjectId;

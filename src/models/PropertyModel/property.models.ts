@@ -97,11 +97,6 @@ const propertySchema = new Schema<IProperty>({
     },
     amenities: [{
         type: String,
-        enum: [
-            'wifi', 'tv', 'fridge', 'washing-machine', 'kitchen',
-            'geyser', 'ac', 'cupboard', 'bed', 'water-purifier',
-            'power-backup', 'lift', 'security', 'cctv'
-        ]
     }],
     preferredTenants: [{
         type: String,

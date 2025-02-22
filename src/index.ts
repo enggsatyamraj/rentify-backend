@@ -11,6 +11,7 @@ import logger from "./utils/logger";
 import mongoose from "mongoose";
 import authRoutes from './routes/auth.routes';
 import propertyRoutes from './routes/property.routes'
+import UserModel from './models/UserModel/user.models';
 
 const app = express();
 app.use(express.json());
@@ -58,7 +59,6 @@ mongoose
     .connect(DB_URI)
     .then(async () => {
         logger.info("Connected to MongoDB");
-        // await UserModel.collection.dropIndexes();  // Add this line
     })
     .catch((error) => {
         logger.error("MongoDB connection error:", error);

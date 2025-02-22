@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 import UserModel from "@/models/UserModel/user.models";
 import { EmailType } from "@/utils/enums";
@@ -12,12 +12,13 @@ import { deleteImage, uploadImage } from "../../utils/upload";
 class AuthController {
     static async signup(req: Request, res: Response) {
         try {
-            const { email, password, firstName, lastName, confirmPassword } = req.body;
+            const { email, password, firstName, lastName, confirmPassword } =
+                req.body;
 
             if (password !== confirmPassword) {
                 return res.status(400).json({
                     success: false,
-                    message: "Passwords do not match"
+                    message: "Passwords do not match",
                 });
             }
 
@@ -26,8 +27,8 @@ class AuthController {
                 if (existingUser.isVerified) {
                     return res.status(400).json({
                         success: false,
-                        message: "User already exists, please login"
-                    })
+                        message: "User already exists, please login",
+                    });
                 } else {
                     logger.info("Resending OTP to existing user", { email });
                     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -40,28 +41,31 @@ class AuthController {
                                 otp: newOtp,
                                 otpExpiry: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
                                 firstName, // Update with new details if provided
-                                lastName
-                            }
+                                lastName,
+                            },
                         }
                     );
+
+                    console.log("is existinguser is admin:::::::::::::::::::::::", existingUser.isAdmin);
 
                     // Send new OTP email
                     await sendEmail({
                         to: email,
                         templateType: EmailType.OTP_VERIFICATION,
-                        payload: { firstName, otp: newOtp }
+                        payload: { firstName, otp: newOtp },
                     });
 
                     return res.status(200).json({
                         success: true,
                         message: "A new verification code has been sent to your email",
-                        userId: existingUser._id
+                        userId: existingUser._id,
                     });
                 }
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
 
             const user = await UserModel.create({
                 email,
@@ -71,26 +75,29 @@ class AuthController {
                 otp,
                 otpExpiry: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
                 isVerified: false,
-                isDeleted: false
+                isDeleted: false,
+                isAdmin: false,
             });
+
+            console.log("is user is admin:::::::::::::::::::::::", user.isAdmin);
 
             await sendEmail({
                 to: email,
                 templateType: EmailType.OTP_VERIFICATION,
-                payload: { firstName, otp }
+                payload: { firstName, otp },
             });
 
             res.status(201).json({
                 success: true,
-                message: "User registered successfully. Please verify your email address",
-                userId: user._id
+                message:
+                    "User registered successfully. Please verify your email address",
+                userId: user._id,
             });
-
         } catch (error) {
             console.error("Signup error:", error);
             res.status(500).json({
                 success: false,
-                message: "Internal server error"
+                message: "Internal server error",
             });
         }
     }
@@ -104,13 +111,14 @@ class AuthController {
                 otp,
                 otpExpiry: { $gt: new Date() }, // Check if OTP hasn't expired
                 isDeleted: false,
-                isVerified: false
+                isVerified: false,
             });
 
             if (!user) {
                 return res.status(400).json({
                     success: false,
-                    message: "Invalid or expired verification code. Please request a new one."
+                    message:
+                        "Invalid or expired verification code. Please request a new one.",
                 });
             }
 
@@ -119,7 +127,7 @@ class AuthController {
                 { _id: user._id },
                 {
                     $set: { isVerified: true },
-                    $unset: { otp: "", otpExpiry: "" }
+                    $unset: { otp: "", otpExpiry: "" },
                 }
             );
 
@@ -128,20 +136,19 @@ class AuthController {
                 templateType: EmailType.WELCOME_VERIFIED,
                 payload: {
                     firstName: user.firstName,
-                    loginUrl: `${process.env.FRONTEND_URL}/login`
-                }
+                    loginUrl: `${process.env.FRONTEND_URL}/login`,
+                },
             });
 
             return res.status(200).json({
                 success: true,
-                message: "Email verified successfully. Please login to continue"
+                message: "Email verified successfully. Please login to continue",
             });
-
         } catch (error) {
             console.error("Verification error:", error);
             return res.status(500).json({
                 success: false,
-                message: "Internal server error"
+                message: "Internal server error",
             });
         }
     }
@@ -153,13 +160,13 @@ class AuthController {
             const user = await UserModel.findOne({
                 email,
                 isDeleted: false,
-                isVerified: false
+                isVerified: false,
             });
 
             if (!user) {
                 return res.status(404).json({
                     success: false,
-                    message: "User not found or already verified"
+                    message: "User not found or already verified",
                 });
             }
 
@@ -171,27 +178,26 @@ class AuthController {
                 {
                     $set: {
                         otp: otp,
-                        otpExpiry: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-                    }
+                        otpExpiry: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+                    },
                 }
             );
 
             await sendEmail({
                 to: email,
                 templateType: EmailType.OTP_VERIFICATION,
-                payload: { firstName: user.firstName, otp }
+                payload: { firstName: user.firstName, otp },
             });
 
             res.status(200).json({
                 success: true,
-                message: "New OTP sent successfully"
+                message: "New OTP sent successfully",
             });
-
         } catch (error) {
             console.error("Resend OTP error:", error);
             res.status(500).json({
                 success: false,
-                message: "Internal server error"
+                message: "Internal server error",
             });
         }
     }
@@ -202,20 +208,20 @@ class AuthController {
 
             const user = await UserModel.findOne({
                 email,
-                isDeleted: false
+                isDeleted: false,
             });
 
             if (!user) {
                 return res.status(404).json({
                     success: false,
-                    message: "User not found"
+                    message: "User not found",
                 });
             }
 
             if (!user.isVerified) {
                 return res.status(403).json({
                     success: false,
-                    message: "Please verify your email first"
+                    message: "Please verify your email first",
                 });
             }
 
@@ -223,14 +229,14 @@ class AuthController {
             if (!isValidPassword) {
                 return res.status(401).json({
                     success: false,
-                    message: "Invalid credentials"
+                    message: "Invalid credentials",
                 });
             }
 
             const token = jwt.sign(
-                { userId: user._id },
+                { userId: user._id, email: user.email, isAdmin: user.isAdmin },
                 process.env.JWT_SECRET as string,
-                { expiresIn: '24h' }
+                { expiresIn: "24h" }
             );
 
             res.status(200).json({
@@ -241,15 +247,15 @@ class AuthController {
                     _id: user._id,
                     email: user.email,
                     firstName: user.firstName,
-                    lastName: user.lastName
-                }
+                    lastName: user.lastName,
+                    isAdmin: user.isAdmin,
+                },
             });
-
         } catch (error) {
             console.error("Signin error:", error);
             res.status(500).json({
                 success: false,
-                message: "Internal server error"
+                message: "Internal server error",
             });
         }
     }
@@ -259,11 +265,16 @@ class AuthController {
             const { email } = req.body;
             logger.info("Forgot password request received", { email });
 
-            const user = await UserModel.findOne({ email, isDeleted: false, isVerified: true });
+            const user = await UserModel.findOne({
+                email,
+                isDeleted: false,
+                isVerified: true,
+            });
             if (!user) {
                 return res.status(200).json({
                     success: false,
-                    message: "User don't exist with this email or its account is not verified."
+                    message:
+                        "User don't exist with this email or its account is not verified.",
                 });
             }
 
@@ -275,8 +286,8 @@ class AuthController {
                 {
                     $set: {
                         otp: otp,
-                        otpExpiry: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-                    }
+                        otpExpiry: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+                    },
                 }
             );
 
@@ -285,20 +296,20 @@ class AuthController {
                 templateType: EmailType.RESET_PASSWORD_OTP,
                 payload: {
                     firstName: user.firstName,
-                    otp
-                }
+                    otp,
+                },
             });
 
             return res.status(200).json({
                 success: true,
-                message: "If a user exists with this email, they will receive a password reset code."
+                message:
+                    "If a user exists with this email, they will receive a password reset code.",
             });
-
         } catch (error) {
             logger.error("Forgot password error:", error);
             return res.status(500).json({
                 success: false,
-                message: "Internal server error"
+                message: "Internal server error",
             });
         }
     }
@@ -312,13 +323,13 @@ class AuthController {
                 email,
                 otp,
                 otpExpiry: { $gt: new Date() }, // Check if OTP hasn't expired
-                isDeleted: false
+                isDeleted: false,
             });
 
             if (!user) {
                 return res.status(400).json({
                     success: false,
-                    message: "Invalid or expired reset code. Please request a new one."
+                    message: "Invalid or expired reset code. Please request a new one.",
                 });
             }
 
@@ -330,7 +341,7 @@ class AuthController {
                 { _id: user._id },
                 {
                     $set: { password: newHashedPassword },
-                    $unset: { otp: "", otpExpiry: "" }
+                    $unset: { otp: "", otpExpiry: "" },
                 }
             );
 
@@ -340,21 +351,21 @@ class AuthController {
                 templateType: EmailType.PASSWORD_RESET_SUCCESS,
                 payload: {
                     firstName: user.firstName,
-                    loginUrl: `${process.env.FRONTEND_URL}/login`
-                }
+                    loginUrl: `${process.env.FRONTEND_URL}/login`,
+                },
             });
 
             logger.info("Password reset successful", { email });
             return res.status(200).json({
                 success: true,
-                message: "Password reset successfully. Please login with your new password."
+                message:
+                    "Password reset successfully. Please login with your new password.",
             });
-
         } catch (error) {
             logger.error("Reset password error:", error);
             return res.status(500).json({
                 success: false,
-                message: "Internal server error"
+                message: "Internal server error",
             });
         }
     }
@@ -363,7 +374,7 @@ class AuthController {
         try {
             // @ts-ignore
             const userId = req.user.id; // From auth middleware
-            console.log('userId:', userId);
+            console.log("userId:", userId);
             logger.info("Profile update request received", { userId });
             const {
                 firstName,
@@ -371,7 +382,7 @@ class AuthController {
                 phoneNumber,
                 dateOfBirth,
                 aadharNumber,
-                address
+                address,
             } = req.body;
 
             // Find existing user
@@ -379,7 +390,7 @@ class AuthController {
             if (!existingUser) {
                 return res.status(404).json({
                     success: false,
-                    message: "User not found"
+                    message: "User not found",
                 });
             }
 
@@ -389,7 +400,7 @@ class AuthController {
                 try {
                     // Delete old image if exists
                     if (existingUser.profileImage) {
-                        const oldImageKey = existingUser.profileImage.split('/').pop();
+                        const oldImageKey = existingUser.profileImage.split("/").pop();
                         if (oldImageKey) {
                             await deleteImage(`rentify/profiles/${oldImageKey}`);
                         }
@@ -397,17 +408,17 @@ class AuthController {
 
                     // Upload new image
                     const { url } = await uploadImage(
-                        'profiles',
+                        "profiles",
                         `${userId}_${Date.now()}`,
                         req.file,
                         true // Enable resize
                     );
                     profileImageData = url;
                 } catch (error) {
-                    logger.error('Profile image upload failed:', error);
+                    logger.error("Profile image upload failed:", error);
                     return res.status(400).json({
                         success: false,
-                        message: "Failed to upload profile image"
+                        message: "Failed to upload profile image",
                     });
                 }
             }
@@ -418,13 +429,14 @@ class AuthController {
                 const existingPhone = await UserModel.findOne({
                     phoneNumber,
                     _id: { $ne: userId }, // Exclude current user
-                    isDeleted: false
+                    isDeleted: false,
                 });
 
                 if (existingPhone) {
                     return res.status(400).json({
                         success: false,
-                        message: "This phone number is already registered with another account"
+                        message:
+                            "This phone number is already registered with another account",
                     });
                 }
             }
@@ -435,7 +447,7 @@ class AuthController {
                 if (!/^\d{12}$/.test(aadharNumber)) {
                     return res.status(400).json({
                         success: false,
-                        message: "Invalid Aadhar number format. Must be 12 digits."
+                        message: "Invalid Aadhar number format. Must be 12 digits.",
                     });
                 }
 
@@ -443,7 +455,7 @@ class AuthController {
                 if (!validateVerhoeff(aadharNumber)) {
                     return res.status(400).json({
                         success: false,
-                        message: "Invalid Aadhar number. Failed checksum validation."
+                        message: "Invalid Aadhar number. Failed checksum validation.",
                     });
                 }
 
@@ -451,13 +463,14 @@ class AuthController {
                 const existingAadhar = await UserModel.findOne({
                     aadharNumber,
                     _id: { $ne: userId },
-                    isDeleted: false
+                    isDeleted: false,
                 });
 
                 if (existingAadhar) {
                     return res.status(400).json({
                         success: false,
-                        message: "This Aadhar number is already registered with another account"
+                        message:
+                            "This Aadhar number is already registered with another account",
                     });
                 }
             }
@@ -480,7 +493,7 @@ class AuthController {
                     region: address.region,
                     country: address.country,
                     postalCode: address.postalCode,
-                    coordinates: address.coordinates
+                    coordinates: address.coordinates,
                 };
             }
 
@@ -488,15 +501,14 @@ class AuthController {
             const updatedUser = await UserModel.findByIdAndUpdate(
                 userId,
                 { $set: updateData },
-                { new: true, select: '-password -otp -otpExpiry' }
+                { new: true, select: "-password -otp -otpExpiry" }
             );
 
             res.status(200).json({
                 success: true,
                 message: "Profile updated successfully",
-                data: updatedUser
+                data: updatedUser,
             });
-
         } catch (error) {
             logger.error("Profile update error:", error);
             res.status(500).json({
@@ -513,9 +525,9 @@ class AuthController {
             const userId = req.user.id;
 
             const userExists = await UserModel.findById(userId)
-                .select('-password -otp -otpExpiry')
+                .select("-password -otp -otpExpiry")
                 .populate({
-                    path: 'propertyListings.property',
+                    path: "propertyListings.property",
                     match: { isDeleted: false },
                     select: `
                         title description propertyType price location details
@@ -523,12 +535,12 @@ class AuthController {
                         status rules foodAvailable maintainenceCharges metaData
                     `,
                     populate: {
-                        path: 'owner',
-                        select: 'firstName lastName email phoneNumber profileImage'
-                    }
+                        path: "owner",
+                        select: "firstName lastName email phoneNumber profileImage",
+                    },
                 })
                 .populate({
-                    path: 'rentedProperties.property',
+                    path: "rentedProperties.property",
                     match: { isDeleted: false },
                     select: `
                         title description propertyType price location details
@@ -536,16 +548,16 @@ class AuthController {
                         status rules foodAvailable maintainenceCharges
                     `,
                     populate: {
-                        path: 'owner',
-                        select: 'firstName lastName email phoneNumber profileImage'
-                    }
+                        path: "owner",
+                        select: "firstName lastName email phoneNumber profileImage",
+                    },
                 })
                 .lean();
 
             if (!userExists) {
                 return res.status(404).json({
                     success: false,
-                    message: "User not found"
+                    message: "User not found",
                 });
             }
 
@@ -553,22 +565,36 @@ class AuthController {
                 // @ts-ignore
                 totalListings: userExists.propertyListings?.length || 0,
                 // @ts-ignore
-                activeRentals: userExists.rentedProperties?.filter(rental => rental.isActive).length || 0,
-                // @ts-ignore
-                propertyTypes: userExists.propertyListings?.reduce((acc, curr) => {
-                    if (curr.property) {  // Need this check since we're not filtering nulls
-                        const type = curr.property.propertyType;
-                        acc[type] = (acc[type] || 0) + 1;
-                    }
-                    return acc;
+                activeRentals:
                     // @ts-ignore
-                }, {} as Record<string, number>) || {},
+                    userExists.rentedProperties?.filter((rental) => rental.isActive)
+                        .length || 0,
                 // @ts-ignore
-                totalViews: userExists.propertyListings?.reduce((sum, curr) =>
-                    sum + (curr.property?.metaData?.views || 0), 0) || 0,
+                propertyTypes:
+                    // @ts-ignore
+                    userExists.propertyListings?.reduce((acc, curr) => {
+                        if (curr.property) {
+                            const type = curr.property.propertyType;
+                            acc[type] = (acc[type] || 0) + 1;
+                        }
+                        return acc;
+                    }, {} as Record<string, number>) || {},
                 // @ts-ignore
-                totalFavorites: userExists.propertyListings?.reduce((sum, curr) =>
-                    sum + (curr.property?.metaData?.favoriteCount || 0), 0) || 0
+                totalViews:
+                    // @ts-ignore
+                    userExists.propertyListings?.reduce(
+                        // @ts-ignore
+                        (sum, curr) => sum + (curr.property?.metaData?.views || 0),
+                        0
+                    ) || 0,
+                // @ts-ignore
+                totalFavorites:
+                    // @ts-ignore
+                    userExists.propertyListings?.reduce(
+                        // @ts-ignore
+                        (sum, curr) => sum + (curr.property?.metaData?.favoriteCount || 0),
+                        0
+                    ) || 0,
             };
 
             const responseData = {
@@ -588,29 +614,32 @@ class AuthController {
                     // @ts-ignore
                     aadharVerified: userExists.aadharVerified,
                     // @ts-ignore
-                    isVerified: userExists.isVerified
+                    isVerified: userExists.isVerified,
+                    // @ts-ignore
+                    isAdmin: userExists.isAdmin, // Include admin status in response
+                    // @ts-ignore
+                    aadharNumber: userExists.aadharNumber
                 },
                 // @ts-ignore
                 propertyListings: userExists.propertyListings,
-                // @ts-ignore  // No filtering here
-                rentedProperties: userExists.rentedProperties,  // No filtering here
+                // @ts-ignore
+                rentedProperties: userExists.rentedProperties,
                 stats,
                 // @ts-ignore
-                deviceTokens: userExists.deviceTokens
+                deviceTokens: userExists.deviceTokens,
             };
 
             return res.status(200).json({
                 success: true,
                 message: "User details fetched successfully",
-                data: responseData
+                data: responseData,
             });
-
         } catch (err) {
             logger.info("Error in getting user details", err);
             return res.status(500).json({
                 success: false,
                 message: "Error in getting user details",
-                error: err
+                error: err,
             });
         }
     }
