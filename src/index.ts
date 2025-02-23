@@ -30,7 +30,7 @@ app.use(cors());
 app.use(express.json());
 app.use(helmet());
 app.use(compression());
-app.use(rateLimiter);
+// app.use(rateLimiter);
 
 const port = process.env.PORT || 4545;
 const DB_URI = process.env.MONGODB_URL!;

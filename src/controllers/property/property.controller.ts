@@ -93,9 +93,11 @@ class PropertyController {
                 limit = 10
             } = req.query;
 
+            // Update the base query to include isVerified
             const query: any = {
                 'status.isActive': true,
-                'status.isAvailable': true
+                'status.isVerified': true,
+                'status.isRented': false  // Add this to ensure we only get available properties
             };
 
             // Apply filters
@@ -104,10 +106,18 @@ class PropertyController {
             if (roomType) query['details.roomType'] = roomType;
             if (furnishingStatus) query['details.furnishingStatus'] = furnishingStatus;
             if (preferredTenants) query.preferredTenants = preferredTenants;
-            if (minPrice) query['price.basePrice'] = { $gte: Number(minPrice) };
-            if (maxPrice) query['price.basePrice'] = { ...query['price.basePrice'], $lte: Number(maxPrice) };
+
+            // Handle price range properly
+            if (minPrice || maxPrice) {
+                query['price.basePrice'] = {};
+                if (minPrice) query['price.basePrice'].$gte = Number(minPrice);
+                if (maxPrice) query['price.basePrice'].$lte = Number(maxPrice);
+            }
 
             const skip = (Number(page) - 1) * Number(limit);
+
+            // Add logging to debug the query
+            console.log('Query:', JSON.stringify(query, null, 2));
 
             const properties = await PropertyModel.find(query)
                 .populate('owner', 'firstName lastName')
@@ -116,6 +126,9 @@ class PropertyController {
                 .sort('-createdAt');
 
             const total = await PropertyModel.countDocuments(query);
+
+            // Add logging to see what's being returned
+            console.log(`Found ${properties.length} properties out of ${total} total`);
 
             res.status(200).json({
                 success: true,
