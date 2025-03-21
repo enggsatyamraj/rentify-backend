@@ -9,7 +9,8 @@ export interface IBooking extends Document {
     endDate?: Date;
     bookingType: 'fixed-term' | 'month-to-month';
     status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'rejected';
-    moveInDetails?: {
+    roomCount: number;
+    moveInDetails: {
         scheduledDate?: Date;
         status: 'scheduled' | 'completed' | 'cancelled';
         notes?: string;
@@ -18,6 +19,12 @@ export interface IBooking extends Document {
         cancelledBy?: Types.ObjectId;
         cancelledAt?: Date;
         reason?: string;
+    };
+    contractDetails?: {
+        documentUrl?: string;
+        signedByTenant: boolean;
+        signedByOwner: boolean;
+        signedAt?: Date;
     };
     reviewId?: Types.ObjectId;
     createdAt: Date;

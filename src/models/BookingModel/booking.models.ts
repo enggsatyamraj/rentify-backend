@@ -52,6 +52,23 @@ const bookingSchema: Schema<IBooking> = new Schema({
         cancelledAt: Date,
         reason: String
     },
+    roomCount: {
+        type: Number,
+        default: 1,
+        min: 1
+    },
+    contractDetails: {
+        documentUrl: String,
+        signedByTenant: {
+            type: Boolean,
+            default: false
+        },
+        signedByOwner: {
+            type: Boolean,
+            default: false
+        },
+        signedAt: Date
+    },
     reviewId: {
         type: Schema.Types.ObjectId,
         ref: 'Reviews'
