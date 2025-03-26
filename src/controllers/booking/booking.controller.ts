@@ -229,18 +229,19 @@ class BookingService {
         session.startTransaction();
 
         try {
-            const { id } = req.params; // this is a booking id
+            const { id } = req.params;
             const { status, reason, scheduledDate } = req.body;
 
             // @ts-ignore
             const userId = req.user.id;
+
             if (!mongoose.Types.ObjectId.isValid(id)) {
                 await session.abortTransaction();
                 session.endSession();
                 return res.status(400).json({
                     success: false,
                     message: "Invalid booking id"
-                })
+                });
             }
 
             const booking = await BookingModel.findById(id)
@@ -264,22 +265,21 @@ class BookingService {
                 return res.status(404).json({
                     success: false,
                     message: "Booking not found"
-                })
+                });
             }
 
             const isOwner = booking.owner._id.toString() === userId;
             const isTenant = booking.tenant._id.toString() === userId;
-
             // @ts-ignore
             const isAdmin = req.user.isAdmin;
 
-            if (!isOwner && !isTenant && isAdmin) {
+            if (!isOwner && !isTenant && !isAdmin) {
                 await session.abortTransaction();
                 session.endSession();
-                return res.status(400).json({
+                return res.status(403).json({
                     success: false,
-                    message: "You dont have permission to update the booking"
-                })
+                    message: "You don't have permission to update this booking"
+                });
             }
 
             const validTransitions: Record<string, string[]> = {
@@ -288,7 +288,7 @@ class BookingService {
                 cancelled: [],
                 completed: [],
                 rejected: []
-            }
+            };
 
             if (!validTransitions[booking.status].includes(status)) {
                 await session.abortTransaction();
@@ -296,7 +296,20 @@ class BookingService {
                 return res.status(400).json({
                     success: false,
                     message: `Cannot change booking status from ${booking.status} to ${status}`
-                })
+                });
+            }
+
+            // New contract signing check
+            if ((status === 'cancelled' || status === 'rejected') &&
+                booking.contractDetails?.signedByTenant &&
+                booking.contractDetails?.signedByOwner &&
+                !isAdmin) {
+                await session.abortTransaction();
+                session.endSession();
+                return res.status(400).json({
+                    success: false,
+                    message: "Cannot cancel booking with signed contract"
+                });
             }
 
             if (status === 'confirmed' && !isOwner && !isAdmin) {
@@ -305,7 +318,7 @@ class BookingService {
                 return res.status(403).json({
                     success: false,
                     message: "Only property owner can confirm bookings"
-                })
+                });
             }
 
             if (status === 'rejected' && !isOwner && !isAdmin) {
@@ -314,7 +327,7 @@ class BookingService {
                 return res.status(403).json({
                     success: false,
                     message: "Only property owner can reject bookings"
-                })
+                });
             }
 
             const updateData: any = { status };
@@ -324,19 +337,16 @@ class BookingService {
                     cancelledBy: userId,
                     cancelledAt: new Date(),
                     reason: reason || "No reason provided"
-                }
+                };
 
-                // Increase the available rooms count
                 await PropertyModel.findByIdAndUpdate(
                     booking.property._id,
                     {
                         $inc: { "details.availableRooms": 1 },
-                        $set: {
-                            "status.isRented": false,
-                        }
+                        $set: { "status.isRented": false }
                     },
                     { session }
-                )
+                );
             }
 
             if (status === 'confirmed' && scheduledDate) {
@@ -347,7 +357,7 @@ class BookingService {
                 id,
                 { $set: updateData },
                 { new: true, session }
-            )
+            );
 
             try {
                 let emailType: EmailType;
@@ -404,8 +414,8 @@ class BookingService {
             res.status(500).json({
                 success: false,
                 message: "Internal server error",
-                error: error
-            })
+                error: error instanceof Error ? error.message : error
+            });
         }
     }
 
