@@ -204,7 +204,7 @@ class AuthController {
 
     static async signin(req: Request, res: Response) {
         try {
-            const { email, password } = req.body;
+            const { email, password, deviceToken, deviceType } = req.body;
 
             const user = await UserModel.findOne({
                 email,
@@ -233,10 +233,34 @@ class AuthController {
                 });
             }
 
+            // Handle device token if provided
+            if (deviceToken && deviceType) {
+                // Check if this token already exists
+                const existingTokenIndex = user.deviceTokens.findIndex(
+                    // @ts-ignore
+                    (device) => device.token === deviceToken
+                );
+
+                if (existingTokenIndex !== -1) {
+                    // Token exists, update lastUsed
+                    user.deviceTokens[existingTokenIndex].lastUsed = new Date();
+                } else {
+                    // Add new token
+                    user.deviceTokens.push({
+                        token: deviceToken,
+                        deviceType: deviceType,
+                        lastUsed: new Date(),
+                    });
+                }
+
+                // Save the updated user
+                await user.save();
+            }
+
             const token = jwt.sign(
                 { userId: user._id, email: user.email, isAdmin: user.isAdmin },
                 process.env.JWT_SECRET as string,
-                { expiresIn: "24h" }
+                { expiresIn: "45d" }
             );
 
             res.status(200).json({
